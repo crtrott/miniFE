@@ -1,0 +1,60 @@
+Mini-Application Name: miniFE
+Mini-Application Version: 2.0
+Global Run Parameters: 
+  dimensions: 
+    nx: 60
+    ny: 60
+    nz: 60
+  load_imbalance: 0
+  mv_overlap_comm_comp: 0 (no)
+  number of processors: 1
+  ScalarType: double
+  GlobalOrdinalType: int
+  LocalOrdinalType: int
+Platform: 
+  hostname: apollo.sandia.gov
+  kernel name: 'Linux'
+  kernel release: '2.6.32-642.13.1.el6.x86_64'
+  processor: 'x86_64'
+Build: 
+  CXX: '/projects/sems/install/rhel6-x86_64/sems/compiler/gcc/5.3.0/base/bin/g++'
+  compiler version: 'g++ (GCC) 5.3.0'
+  CXXFLAGS: '-g -O3'
+  using MPI: no
+Run Date/Time: 2017-03-11, 11-57-04
+Rows-per-proc Load Imbalance: 
+  Largest (from avg, %): 0
+  Std Dev (%): 0
+Matrix structure generation: 
+  Mat-struc-gen Time: 0.116397
+FE assembly: 
+  FE assembly Time: 0.589257
+Matrix attributes: 
+  Global Nrows: 226981
+  Global NNZ: 5929741
+  Global Memory (GB): 0.0679612
+  Pll Memory Overhead (MB): 0
+  Rows per proc MIN: 226981
+  Rows per proc MAX: 226981
+  Rows per proc AVG: 226981
+  NNZ per proc MIN: 5929741
+  NNZ per proc MAX: 5929741
+  NNZ per proc AVG: 5.92974e+06
+CG solve: 
+  Iterations: 200
+  Final Resid Norm: 3.03166e-16
+  WAXPY Time: 0.134316
+  WAXPY Flops: 3.90096e+08
+  WAXPY Mflops: 2904.32
+  DOT Time: 0.111872
+  DOT Flops: 1.728e+08
+  DOT Mflops: 1544.62
+  MATVEC Time: 1.60449
+  MATVEC Flops: 2.38376e+09
+  MATVEC Mflops: 1485.68
+  Total: 
+    Total CG Time: 1.86258
+    Total CG Flops: 2.94665e+09
+    Total CG Mflops: 1582.03
+  Time per iteration: 0.00931288
+Total Program Time: 2.76745
