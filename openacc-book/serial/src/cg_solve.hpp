@@ -66,14 +66,40 @@ bool breakdown(typename VectorType::ScalarType inner,
   return std::abs(inner) <= 100*vnorm*wnorm*std::numeric_limits<magnitude>::epsilon();
 }
 
+
+void matvec(int nrows, const int* A_row_offsets, const int* A_cols, const double* A_vals, double* y, const double* x) {
+  for(int row=0; row<nrows; ++row) {
+    double sum = 0.0;
+
+    int row_start=A_row_offsets[row];
+    int row_end=A_row_offsets[row+1];
+    for(int i=row_start; i<row_end; ++i) {
+      sum += A_vals[i]*x[A_cols[i]];
+    }
+    y[row] = sum;
+  }
+}
+
+double dot(int n, const double* x, const double* y) {
+  double sum = 0.0;
+  for(int i=0; i<n; i++)
+    sum += x[i]*y[i];
+  return sum;
+}
+
+void axpby(int n, double* z, double alpha, const double* x, double beta, const double* y) {
+  for(int i=0; i<n; i++)
+    z[i] = alpha*x[i] + beta*y[i];
+}
+
 template<typename OperatorType,
          typename VectorType,
          typename Matvec>
 void
 cg_solve(OperatorType& A,
-         const VectorType& b,
-         VectorType& x,
-         Matvec matvec,
+         const VectorType& b_in,
+         VectorType& x_in,
+         Matvec MatVec,
          typename OperatorType::LocalOrdinalType max_iter,
          typename TypeTraits<typename OperatorType::ScalarType>::magnitude_type& tolerance,
          typename OperatorType::LocalOrdinalType& num_iters,
@@ -100,9 +126,16 @@ cg_solve(OperatorType& A,
   size_t nrows = A.rows.size();
   LocalOrdinalType ncols = A.num_cols;
 
-  VectorType r(b.startIndex, nrows);
-  VectorType p(0, ncols);
-  VectorType Ap(b.startIndex, nrows);
+  ScalarType* r = new double[nrows];
+  ScalarType* p = new double[ncols];
+  ScalarType* Ap = new double[nrows];
+ 
+  ScalarType* x = &x_in.coefs[0];
+  const ScalarType* b = &b_in.coefs[0];
+  
+  ScalarType* A_vals = &A.packed_coefs[0];
+  GlobalOrdinalType* A_cols = &A.packed_cols[0];
+  LocalOrdinalType* A_rows = &A.row_offsets[0]; 
 
   normr = 0;
   magnitude_type rtrans = 0;
@@ -115,15 +148,15 @@ cg_solve(OperatorType& A,
   ScalarType one = 1.0;
   ScalarType zero = 0.0;
 
-  TICK(); waxpby(one, x, zero, x, p); TOCK(tWAXPY);
+  TICK(); axpby(nrows, p, one, x, zero, x); TOCK(tWAXPY);
 
   TICK();
-  matvec(A, p, Ap);
+  matvec(nrows,A_rows, A_cols, A_vals, Ap, p);
   TOCK(tMATVEC);
 
-  TICK(); waxpby(one, b, -one, Ap, r); TOCK(tWAXPY);
+  TICK(); axpby(nrows,r, one, b, -one, Ap); TOCK(tWAXPY);
 
-  TICK(); rtrans = dot(r, r); TOCK(tDOT);
+  TICK(); rtrans = dot(nrows,r, r); TOCK(tDOT);
 
   normr = std::sqrt(rtrans);
 
@@ -135,13 +168,13 @@ cg_solve(OperatorType& A,
 
   for(LocalOrdinalType k=1; k <= max_iter && normr > tolerance; ++k) {
     if (k == 1) {
-      TICK(); waxpby(one, r, zero, r, p); TOCK(tWAXPY);
+      TICK(); axpby(nrows, p, one, r, zero, r); TOCK(tWAXPY);
     }
     else {
       oldrtrans = rtrans;
-      TICK(); rtrans = dot(r, r); TOCK(tDOT);
+      TICK(); rtrans = dot(nrows, r, r); TOCK(tDOT);
       magnitude_type beta = rtrans/oldrtrans;
-      TICK(); waxpby(one, r, beta, p, p); TOCK(tWAXPY);
+      TICK(); axpby(nrows, p, one, r, beta, p); TOCK(tWAXPY);
     }
 
     normr = std::sqrt(rtrans);
@@ -153,12 +186,12 @@ cg_solve(OperatorType& A,
     magnitude_type alpha = 0;
     magnitude_type p_ap_dot = 0;
 
-    TICK(); matvec(A, p, Ap); TOCK(tMATVEC);
+    TICK(); matvec(nrows,A_rows, A_cols, A_vals, Ap, p); TOCK(tMATVEC);
 
-    TICK(); p_ap_dot = dot(Ap, p); TOCK(tDOT);
+    TICK(); p_ap_dot = dot(nrows, Ap, p); TOCK(tDOT);
 
     if (p_ap_dot < brkdown_tol) {
-      if (p_ap_dot < 0 || breakdown(p_ap_dot, Ap, p)) {
+      if (p_ap_dot < 0 ) {
         std::cerr << "miniFE::cg_solve ERROR, numerical breakdown!"<<std::endl;
         //update the timers before jumping out.
         my_cg_times[WAXPY] = tWAXPY;
@@ -171,8 +204,8 @@ cg_solve(OperatorType& A,
     }
     alpha = rtrans/p_ap_dot;
     
-    TICK(); waxpby(one, x, alpha, p, x);
-            waxpby(one, r, -alpha, Ap, r); TOCK(tWAXPY);
+    TICK(); axpby(nrows, x, one, x, alpha, p);
+            axpby(nrows, r, one, r, -alpha, Ap); TOCK(tWAXPY);
 
     num_iters = k;
   }
