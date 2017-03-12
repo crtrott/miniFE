@@ -68,6 +68,22 @@ bool breakdown(typename VectorType::ScalarType inner,
 }
 
 
+#ifdef MINIFE_USE_FLAT_MATVEC
+void matvec(int nrows, Kokkos::View<const int*> A_row_offsets, Kokkos::View<const int*> A_cols,
+            Kokkos::View<const double*> A_vals, Kokkos::View<double*> y,
+            Kokkos::View<const double*, Kokkos::MemoryTraits<Kokkos::RandomAccess>> x) {
+  
+  Kokkos::parallel_for("MatVec:Flat",nrows, KOKKOS_LAMBDA (const int& row) {
+    const int row_start=A_row_offsets[row];
+    const int row_end=A_row_offsets[row+1];
+    double y_row = 0.0;
+    for(int i=row_start; i<row_end; i++)
+      y_row += A_vals(i)*x(A_cols(i));
+    y(row) = y_row;
+  });
+  Kokkos::fence();
+}
+#else
 void matvec(int nrows, Kokkos::View<const int*> A_row_offsets, Kokkos::View<const int*> A_cols, 
             Kokkos::View<const double*> A_vals, Kokkos::View<double*> y, 
             Kokkos::View<const double*, Kokkos::MemoryTraits<Kokkos::RandomAccess>> x) {
@@ -76,36 +92,36 @@ void matvec(int nrows, Kokkos::View<const int*> A_row_offsets, Kokkos::View<cons
   int rows_per_team = 64;
   int team_size = 64;
 #else
-  int rows_per_team = 256;
+  int rows_per_team = 512;
   int team_size = 1;
 #endif
 
-  Kokkos::parallel_for(Kokkos::TeamPolicy<>
+  Kokkos::parallel_for("MatVec:Hierarchy", Kokkos::TeamPolicy<Kokkos::Schedule<Kokkos::Dynamic> >
        ((nrows+rows_per_team-1)/rows_per_team,team_size,8), 
     KOKKOS_LAMBDA (const Kokkos::TeamPolicy<>::member_type& team) {
-    int first_row = team.league_rank()*rows_per_team;
-    int last_row = first_row+rows_per_team<nrows?
-        first_row+rows_per_team:nrows;
+    const int first_row = team.league_rank()*rows_per_team;
+    const int last_row = first_row+rows_per_team<nrows?
+                         first_row+rows_per_team:nrows;
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team,first_row,last_row),
       [&] (const int row) {
       const int row_start=A_row_offsets[row];
       const int row_length=A_row_offsets[row+1]-row_start;
+
       double y_row;
       Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(team,row_length),
-        [&] (const int i,double& sum) {
+        [=] (const int i,double& sum) {
         sum += A_vals(i+row_start)*x(A_cols(i+row_start));
       },y_row);
-      Kokkos::single(Kokkos::PerThread(team), [&] () {
-        y(row) = y_row;
-      });
+      y(row) = y_row;
     });
   });
   Kokkos::fence();
 }
+#endif
 
 double dot(int n, Kokkos::View<const double*> x, Kokkos::View<const double*> y) {
   double x_dot_y = 0.0;
-  Kokkos::parallel_reduce(n, KOKKOS_LAMBDA (const int& i,double& sum) {
+  Kokkos::parallel_reduce("Dot",n, KOKKOS_LAMBDA (const int& i,double& sum) {
     sum += x[i]*y[i];
   },x_dot_y);
   Kokkos::fence();
@@ -114,7 +130,7 @@ double dot(int n, Kokkos::View<const double*> x, Kokkos::View<const double*> y) 
 
 void axpby(int n, Kokkos::View<double*> z, double alpha, Kokkos::View<const double*> x, 
                                            double beta,  Kokkos::View<const double*> y) {
-  Kokkos::parallel_for(n, KOKKOS_LAMBDA ( const int& i) {
+  Kokkos::parallel_for("AXpBY", n, KOKKOS_LAMBDA ( const int& i) {
     z(i) = alpha*x(i) + beta*y(i);
   });
   Kokkos::fence();
