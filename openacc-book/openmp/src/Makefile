@@ -11,18 +11,23 @@ MINIFE_MATRIX_TYPE = -DMINIFE_CSR_MATRIX
 #-----------------------------------------------------------------------
 
 CFLAGS = -O3 -g
+LDFLAGS = 
+CFLAGS += -xMIC-AVX512
+LDFLAGS += -xMIC-AVX512
 CXXFLAGS = $(CFLAGS)
-
 CPPFLAGS = -I. -I../utils -I../fem $(MINIFE_TYPES) $(MINIFE_MATRIX_TYPE) \
-	-DHAVE_MPI -DMPICH_IGNORE_CXX_SEEK \
 	-DMINIFE_REPORT_RUSAGE
 
-CPPFLAGS += -qsmp=omp -qoffload -qnoeh
-LDFLAGS=-qsmp=omp
+CPPFLAGS += -fopenmp
+LDFLAGS += -fopenmp
+#IBM XL OpenMP 4.5 flags
+#CPPFLAGS += -qsmp=omp -qoffload -qnoeh
+#LDFLAGS+=-qsmp=omp
+
 LIBS=
 
-CXX=xlc++
-CC=xlc
+CXX=icpc
+CC=icc
 
 include make_targets
 

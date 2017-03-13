@@ -68,31 +68,59 @@ bool breakdown(typename VectorType::ScalarType inner,
 
 
 void matvec(int nrows, int nnz, const int* A_row_offsets, const int* A_cols, const double* A_vals, double* y, const double* x) {
-  #pragma omp target teams distribute parallel for \
+  
+  int rows_per_block = 1024;
+  int nrow_blocks = (nrows+rows_per_block-1)/rows_per_block;
+  // Make these ints doesn't work on Intel 17 on KNL 
+  #define team_size 4
+  #define nteams 64
+  #pragma omp target teams distribute parallel for num_teams(nteams) thread_limit(team_size) \
       map(from: y[0:nrows]) \
       map(to: x[0:nrows], A_row_offsets[0:nrows+1], A_cols[0:nnz], A_vals[0:nnz])
   for(int row=0; row<nrows; ++row) {
-    double sum = 0.0;
+    const int row_start=A_row_offsets[row];
+    const int row_end=A_row_offsets[row+1];
 
-    int row_start=A_row_offsets[row];
-    int row_end=A_row_offsets[row+1];
+    double sum = 0.0;
+    #pragma omp simd reduction(+: sum)
     for(int i=row_start; i<row_end; ++i) {
       sum += A_vals[i]*x[A_cols[i]];
     }
     y[row] = sum;
   }
+  /*
+   #pragma omp target teams distribute num_teams(64) thread_limit(4) \
+      map(from: y[0:nrows]) \
+      map(to: x[0:nrows], A_row_offsets[0:nrows+1], A_cols[0:nnz], A_vals[0:nnz])
+  for(int row_block=0; row_block<nrow_blocks; ++row_block) {
+    const int block_start = row_block*rows_per_block;
+    const int block_end = block_start + rows_per_block < nrows?
+                          block_start + rows_per_block : nrows;
+    #pragma omp parallel for
+    for(int row = block_start; row < block_end; row++) {
+      const int row_start=A_row_offsets[row];
+      const int row_end=A_row_offsets[row+1];
+      
+      double sum = 0.0;
+      #pragma omp simd reduction(+: sum)
+      for(int i=row_start; i<row_end; ++i) {
+        sum += A_vals[i]*x[A_cols[i]];
+      }
+      y[row] = sum;
+    }
+  }*/
 }
 
 double dot(int n, const double* x, const double* y) {
   double sum = 0.0;
-  #pragma omp target teams distribute parallel for reduction(+: sum) map(tofrom: sum) map(to: x[0:n], y[0:n])
+  #pragma omp target teams distribute parallel for simd reduction(+: sum) map(tofrom: sum) map(to: x[0:n], y[0:n])
   for(int i=0; i<n; i++)
     sum += x[i]*y[i];
   return sum;
 }
 
 void axpby(int n, double* z, double alpha, const double* x, double beta, const double* y) {
-  #pragma omp target teams distribute parallel for map(from: z[0:n]) map(to: x[0:n], y[0:n])
+  #pragma omp target teams distribute parallel for simd map(from: z[0:n]) map(to: x[0:n], y[0:n])
   for(int i=0; i<n; i++)
     z[i] = alpha*x[i] + beta*y[i];
 }
