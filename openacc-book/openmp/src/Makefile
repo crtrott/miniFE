@@ -13,28 +13,32 @@ MINIFE_MATRIX_TYPE = -DMINIFE_CSR_MATRIX
 CFLAGS = -O3 -g
 LDFLAGS = 
 #KNL
-#CFLAGS += -xMIC-AVX512
-#LDFLAGS += -xMIC-AVX512
+CFLAGS += -xMIC-AVX512 -DMINIFE_KNL
+LDFLAGS += -xMIC-AVX512
+#AVX
+#CFLAGS += -mavx -DMINIFE_CPU
+#LDFLAGS += -mavx
 #Power8
-CFLAGS += -mcpu=power8 -mtune=power8
-LDFLAGS += -mcpu=power8 -mtune=power8
+#CFLAGS += -mcpu=power8 -mtune=power8 
+#LDFLAGS += -mcpu=power8 -mtune=power8
+
+
+
 CXXFLAGS = $(CFLAGS)
 CPPFLAGS = -I. -I../utils -I../fem $(MINIFE_TYPES) $(MINIFE_MATRIX_TYPE) \
 	-DMINIFE_REPORT_RUSAGE
 
 #Intel compiler and GCC
-#CPPFLAGS += -fopenmp
-#LDFLAGS += -fopenmp
-#KNL
-#CPPFLAGS += -DMINIFE_NUM_TEAMS=64 -DMINIFE_TEAM_SIZE=4
-#CXX=icpc
-#CC=icc
+CPPFLAGS += -fopenmp
+LDFLAGS += -fopenmp
+CXX=icpc
+CC=icc
 
-#IBM XL OpenMP 4.5 flags
-CPPFLAGS += -DMINIFE_NUM_TEAMS=1024 -DMINIFE_TEAM_SIZE=128 -qsmp=omp -qoffload -qnoeh
-LDFLAGS+=-qsmp=omp
-CXX = xlc++
-CC = xlc
+#IBM XL OpenMP 4.5 flags GPU
+#CPPFLAGS += -DMINIFE_GPU -qsmp=omp -qoffload -qnoeh
+#LDFLAGS+=-qsmp=omp
+#CXX = xlc++
+#CC = xlc
 
 LIBS=
 

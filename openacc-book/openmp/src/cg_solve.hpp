@@ -35,7 +35,7 @@
 #include <mytimer.hpp>
 
 #include <outstream.hpp>
-
+#include <omp.h>
 namespace miniFE {
 
 template<typename Scalar>
@@ -68,16 +68,27 @@ bool breakdown(typename VectorType::ScalarType inner,
 
 
 void matvec(int nrows, int nnz, const int* A_row_offsets, const int* A_cols, const double* A_vals, double* y, const double* x) {
-  // Using integer arguments for nteams and team_size doesn't seem to work for some reason on Intel 17 on KNL 
-  #pragma omp target teams distribute parallel for num_teams(MINIFE_NUM_TEAMS) thread_limit(MINIFE_TEAM_SIZE) \
+  #ifdef MINIFE_KNL
+  int nteams = omp_get_max_threads()/4;
+  int team_size = 4;
+  #endif
+  #ifdef MINIFE_GPU
+  int nteams = 1024;
+  int team_size = 256;
+  #endif 
+  #ifdef MINIFE_CPU
+  int nteams = omp_get_max_threads();
+  int team_size = 1;
+  #endif
+  #pragma omp target teams distribute parallel for num_teams(nteams) thread_limit(team_size) \
       map(from: y[0:nrows]) \
-      map(to: x[0:nrows], A_row_offsets[0:nrows+1], A_cols[0:nnz], A_vals[0:nnz])
+      map(to: x[0:nrows], A_row_offsets[0:nrows+1], A_cols[0:nnz], A_vals[0:nnz], nteams, team_size)
   for(int row=0; row<nrows; ++row) {
     const int row_start=A_row_offsets[row];
     const int row_end=A_row_offsets[row+1];
 
     double sum = 0.0;
-//    #pragma omp simd reduction(+: sum)
+    #pragma omp simd reduction(+: sum)
     for(int i=row_start; i<row_end; ++i) {
       sum += A_vals[i]*x[A_cols[i]];
     }
@@ -87,14 +98,14 @@ void matvec(int nrows, int nnz, const int* A_row_offsets, const int* A_cols, con
 
 double dot(int n, const double* x, const double* y) {
   double sum = 0.0;
-  #pragma omp target teams distribute parallel for reduction(+: sum) map(tofrom: sum) map(to: x[0:n], y[0:n])
+  #pragma omp target teams distribute parallel for simd reduction(+: sum) map(tofrom: sum) map(to: x[0:n], y[0:n])
   for(int i=0; i<n; i++)
     sum += x[i]*y[i];
   return sum;
 }
 
 void axpby(int n, double* z, double alpha, const double* x, double beta, const double* y) {
-  #pragma omp target teams distribute parallel for map(from: z[0:n]) map(to: x[0:n], y[0:n])
+  #pragma omp target teams distribute parallel for simd map(from: z[0:n]) map(to: x[0:n], y[0:n])
   for(int i=0; i<n; i++)
     z[i] = alpha*x[i] + beta*y[i];
 }
