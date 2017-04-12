@@ -142,8 +142,6 @@ int main(int argc, char** argv) {
    getrusage(RUSAGE_SELF, &get_mem);
 
    long long int rank_rss = get_mem.ru_maxrss;
-   long long int global_rss = 0;
-   long long int max_rss = 0;
 
    doc.add("RSS (kB)", rank_rss);
 #endif

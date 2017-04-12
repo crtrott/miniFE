@@ -17,7 +17,7 @@ CXXFLAGS = -g -O3
 
 CPPFLAGS = -std=c++11 -I. -I../utils -I../fem $(MINIFE_TYPES) -I${TBB_PATH}/include\
 	$(MINIFE_MATRIX_TYPE)
-CPPFLAGS += -DMINIFE_USE_FLAT_MATVEC
+CPPFLAGS += -DMINIFE_USE_FLAT_SPMV
 
 LDFLAGS = -L${TBB_PATH}/lib/intel64/gcc4.4 -ltbb
 LIBS=-lm

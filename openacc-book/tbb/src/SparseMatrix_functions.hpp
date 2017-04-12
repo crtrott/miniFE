@@ -184,7 +184,6 @@ sum_in_symm_elem_matrix(size_t num,
 //std::cout<<std::endl;
 
   int row_offset = 0;
-  bool flag = false;
   for(size_t i=0; i<num; ++i) {
     GlobalOrdinal row = indices[i];
  
