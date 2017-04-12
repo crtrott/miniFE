@@ -66,7 +66,22 @@ bool breakdown(typename VectorType::ScalarType inner,
   return std::abs(inner) <= 100*vnorm*wnorm*std::numeric_limits<magnitude>::epsilon();
 }
 
+#ifdef MINIFE_USE_FLAT_SPMV
+void matvec(int nrows, int nnz, const int* A_row_offsets, const int* A_cols, const double* A_vals, double* y, const double* x) {
+  #pragma acc parallel loop gang, vector\
+      present(y[0:nrows], x[0:nrows], A_row_offsets[0:nrows+1], A_cols[0:nnz], A_vals[0:nnz])
+  for(int row=0; row<nrows; ++row) {
+    const int row_start=A_row_offsets[row];
+    const int row_end=A_row_offsets[row+1];
 
+    double sum = 0.0;
+    for(int i=row_start; i<row_end; ++i) {
+      sum += A_vals[i]*x[A_cols[i]];
+    }
+    y[row] = sum;
+  }
+}
+#else
 void matvec(int nrows, int nnz, const int* A_row_offsets, const int* A_cols, const double* A_vals, double* y, const double* x) {
   #pragma acc parallel num_gangs(1024) vector_length(32) \
       present(y[0:nrows], x[0:nrows], A_row_offsets[0:nrows+1], A_cols[0:nnz], A_vals[0:nnz])
@@ -85,6 +100,7 @@ void matvec(int nrows, int nnz, const int* A_row_offsets, const int* A_cols, con
     }
   }
 }
+#endif
 
 double dot(int n, const double* x, const double* y) {
   double sum = 0.0;

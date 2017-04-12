@@ -17,6 +17,9 @@ CXXFLAGS = $(CFLAGS)
 CPPFLAGS = -I. -I../utils -I../fem $(MINIFE_TYPES) $(MINIFE_MATRIX_TYPE) \
 	-DMINIFE_REPORT_RUSAGE
 
+#Use flat SPMV kernel
+CPPFLAGS += -DMINIFE_USE_FLAT_SPMV
+
 #PGI compiler compiling for NVIDIA Pascal P100
 CPPFLAGS += -acc -ta=tesla:cc60 
 LDFLAGS += -acc -ta=tesla:cc60
