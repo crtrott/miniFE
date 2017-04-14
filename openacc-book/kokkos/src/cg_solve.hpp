@@ -96,7 +96,7 @@ void matvec(int nrows, Kokkos::View<const int*> A_row_offsets, Kokkos::View<cons
   int team_size = 1;
 #endif
 
-  Kokkos::parallel_for("MatVec:Hierarchy", Kokkos::TeamPolicy<Kokkos::Schedule<Kokkos::Dynamic> >
+  Kokkos::parallel_for("MatVec:Hierarchy", Kokkos::TeamPolicy<Kokkos::Schedule<Kokkos::Static> >
        ((nrows+rows_per_team-1)/rows_per_team,team_size,8), 
     KOKKOS_LAMBDA (const Kokkos::TeamPolicy<>::member_type& team) {
     const int first_row = team.league_rank()*rows_per_team;
