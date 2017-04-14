@@ -68,19 +68,7 @@ bool breakdown(typename VectorType::ScalarType inner,
 
 
 void matvec(int nrows, int nnz, const int* A_row_offsets, const int* A_cols, const double* A_vals, double* y, const double* x) {
-  #ifdef MINIFE_KNL
-  int nteams = omp_get_max_threads()/4;
-  int team_size = 4;
-  #endif
-  #ifdef MINIFE_GPU
-  int nteams = 1024;
-  int team_size = 256;
-  #endif 
-  #ifdef MINIFE_CPU
-  int nteams = omp_get_max_threads();
-  int team_size = 1;
-  #endif
-  #pragma omp target teams distribute parallel for num_teams(nteams) thread_limit(team_size) \
+  #pragma omp target teams distribute parallel for\
       map(from: y[0:nrows]) \
       map(to: x[0:nrows], A_row_offsets[0:nrows+1], A_cols[0:nnz], A_vals[0:nnz], nteams, team_size)
   for(int row=0; row<nrows; ++row) {
