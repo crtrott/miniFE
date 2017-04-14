@@ -14,17 +14,15 @@ CFLAGS = -O3 -g
 CXXFLAGS = $(CFLAGS)
 
 CPPFLAGS = -I. -I../utils -I../fem $(MINIFE_TYPES) $(MINIFE_MATRIX_TYPE) \
-	-DHAVE_MPI -DMPICH_IGNORE_CXX_SEEK \
+	-DMPICH_IGNORE_CXX_SEEK \
 	-DMINIFE_REPORT_RUSAGE
 
 LDFLAGS=
 LIBS=
 
-CXX=mpicxx
-CC=mpicc
 
-#CXX=g++
-#CC=gcc
+CXX=g++
+CC=gcc
 
 include make_targets
 
