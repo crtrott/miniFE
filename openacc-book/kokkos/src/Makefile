@@ -14,7 +14,7 @@ HEADERS = $(wildcard *.hpp)
 HEADERS += $(wildcard ../utils/*.hpp)
 
 KOKKOS_DEVICES=OpenMP
-KOKKOS_CUDA_OPTIONS=enable_lambda
+KOKKOS_CUDA_OPTIONS=enable_lambda,rdc
 
 default: build
 	echo "Start Build"

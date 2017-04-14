@@ -83,10 +83,10 @@ void matvec(int nrows, int nnz, const int* A_row_offsets, const int* A_cols, con
 }
 #else
 void matvec(int nrows, int nnz, const int* A_row_offsets, const int* A_cols, const double* A_vals, double* y, const double* x) {
-  #pragma acc parallel num_gangs(8096) vector_length(32) \
+  #pragma acc parallel num_workers(64) vector_length(8) \
       present(y[0:nrows], x[0:nrows], A_row_offsets[0:nrows+1], A_cols[0:nnz], A_vals[0:nnz])
   {
-    #pragma acc loop gang
+    #pragma acc loop gang worker
     for(int row=0; row<nrows; ++row) {
       const int row_start=A_row_offsets[row];
       const int row_end=A_row_offsets[row+1];
