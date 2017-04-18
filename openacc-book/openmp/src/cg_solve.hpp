@@ -70,7 +70,7 @@ bool breakdown(typename VectorType::ScalarType inner,
 void matvec(int nrows, int nnz, const int* A_row_offsets, const int* A_cols, const double* A_vals, double* y, const double* x) {
   #pragma omp target teams distribute parallel for\
       map(from: y[0:nrows]) \
-      map(to: x[0:nrows], A_row_offsets[0:nrows+1], A_cols[0:nnz], A_vals[0:nnz], nteams, team_size)
+      map(to: x[0:nrows], A_row_offsets[0:nrows+1], A_cols[0:nnz], A_vals[0:nnz])
   for(int row=0; row<nrows; ++row) {
     const int row_start=A_row_offsets[row];
     const int row_end=A_row_offsets[row+1];

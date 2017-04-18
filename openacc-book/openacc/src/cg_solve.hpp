@@ -113,7 +113,7 @@ double dot(int n, const double* x, const double* y) {
 
 void axpby(int n, double* z, double alpha, const double* x, double beta, const double* y) {
   #pragma acc parallel loop \ 
-     present(x[0:n],y[0:n])
+     present(x[0:n],y[0:n],z[0:n])
   for(int i=0; i<n; i++)
     z[i] = alpha*x[i] + beta*y[i];
 }
