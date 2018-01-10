@@ -176,25 +176,25 @@ cg_solve(OperatorType& A,
   Kokkos::View<double*> p("p",nrows);
   Kokkos::View<double*> Ap("Ap",nrows);
  
-  Kokkos::View<double*,Kokkos::HostSpace,Kokkos::MemoryTraits<Kokkos::Unmanaged> > 
+  Kokkos::View<double*,Kokkos::LayoutLeft,Kokkos::HostSpace,Kokkos::MemoryTraits<Kokkos::Unmanaged> > 
     h_x(&x_in.coefs[0], nrows);
-  Kokkos::View<double*> x("x",nrows);
+  Kokkos::View<double*,Kokkos::LayoutLeft> x("x",nrows);
 
-  Kokkos::View<const double*,Kokkos::HostSpace,Kokkos::MemoryTraits<Kokkos::Unmanaged> > 
+  Kokkos::View<const double*,Kokkos::LayoutLeft,Kokkos::HostSpace,Kokkos::MemoryTraits<Kokkos::Unmanaged> > 
     h_b(&b_in.coefs[0], nrows);
-  Kokkos::View<double*> b("b",nrows);
+  Kokkos::View<double*,Kokkos::LayoutLeft> b("b",nrows);
   
-  Kokkos::View<double*,Kokkos::HostSpace,Kokkos::MemoryTraits<Kokkos::Unmanaged> >
+  Kokkos::View<double*,Kokkos::LayoutLeft,Kokkos::HostSpace,Kokkos::MemoryTraits<Kokkos::Unmanaged> >
     h_A_vals(&A.packed_coefs[0], A.packed_coefs.size());
-  Kokkos::View<double*> A_vals("A_vals", A.packed_coefs.size());
+  Kokkos::View<double*,Kokkos::LayoutLeft> A_vals("A_vals", A.packed_coefs.size());
 
-  Kokkos::View<int*,Kokkos::HostSpace,Kokkos::MemoryTraits<Kokkos::Unmanaged> >
+  Kokkos::View<int*,Kokkos::LayoutLeft,Kokkos::HostSpace,Kokkos::MemoryTraits<Kokkos::Unmanaged> >
     h_A_cols(&A.packed_cols[0], A.packed_cols.size());
-  Kokkos::View<int*> A_cols("A_cols", A.packed_cols.size());
+  Kokkos::View<int*,Kokkos::LayoutLeft> A_cols("A_cols", A.packed_cols.size());
 
-  Kokkos::View<int*,Kokkos::HostSpace,Kokkos::MemoryTraits<Kokkos::Unmanaged> >
+  Kokkos::View<int*,Kokkos::LayoutLeft,Kokkos::HostSpace,Kokkos::MemoryTraits<Kokkos::Unmanaged> >
     h_A_rows(&A.row_offsets[0], nrows+1);
-  Kokkos::View<int*> A_rows("A_rows", nrows+1);
+  Kokkos::View<int*,Kokkos::LayoutLeft> A_rows("A_rows", nrows+1);
 
 
   Kokkos::deep_copy(x,h_x);
